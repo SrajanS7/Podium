@@ -109,22 +109,7 @@ src/
 e2e/                          Playwright smoke + accessibility tests
 ```
 
-## Common changes
 
-| Change | Where |
-|---|---|
-| Colours, spacing, fonts | `src/styles/tokens.css` (+ `colors.ts` for chart colours) |
-| New KPI or measure | Add a function in `src/domain/metrics.ts`, show it with `<KpiCard>` |
-| Which sports count once per team | Data manager › Sports & counting rules (no code) or `TEAM_SPORTS` in `src/data/excel.ts` |
-| Add a model factor | `features` inside `expectedMedalsModel` in `src/domain/metrics.ts` (literacy is already an option: `{ literacy: true }`) |
-| Change the expected-vs-actual scatter (both screens) | `src/components/charts/ExpectedScatter.tsx` |
-| Add a variable to the correlation matrix | One line in `variables` inside `correlationMatrix` in `src/domain/metrics.ts` |
-| Change the matrix colours | `NEG` / `MID` / `POS` at the top of `src/components/charts/CorrelationMatrix.tsx` |
-| Change a band's limits (coastline, density, migration) | `COASTLINE_BANDS` / `coastlineBand` etc. in `src/domain/metrics.ts` |
-| Count another sport as a water sport | `WATER_SPORTS` in `src/domain/metrics.ts` |
-| New form field | `src/domain/validation.ts` + `RecordEditor.tsx` (TypeScript flags the rest) |
-| Change what an Excel import accepts | Columns: `REQUIRED_COLUMNS` in `src/data/excel.ts` · values: `validateImport` in `src/domain/validation.ts` (tests in `src/data/excel.test.ts`) |
-| New screen / move a screen in the menu | Add a page in `src/pages/` and a `<Route>` in `src/app/App.tsx`; the sidebar order is in `src/app/Layout.tsx` |
 
 ## Tech
 
