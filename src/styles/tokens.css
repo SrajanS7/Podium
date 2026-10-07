@@ -1,0 +1,54 @@
+/* Design tokens: change the look of the whole app here. */
+/* The app deliberately uses one light theme; color-scheme keeps form controls consistent. */
+:root {
+  color-scheme: light;
+  /* surfaces & text */
+  --color-page: #f4f5f7;
+  --color-surface: #ffffff;
+  --color-border: #e1e4e8;
+  --color-border-strong: #b9bfc8;
+  --color-text: #15191f;
+  --color-text-muted: #59606b;
+  --color-nav: #0f1b2d;
+  --color-nav-text: #c9d3e3;
+
+  /* brand & data colours (all pass 4.5:1 on white for text use) */
+  --color-primary: #1d5bb8;
+  --color-primary-dark: #123e80;
+  --color-primary-soft: #e8effa;
+  --color-summer: #c2410c;
+  --color-winter: #1d5bb8;
+  --color-over: #1d5bb8;      /* beats expectation */
+  --color-under: #c2410c;     /* below expectation */
+  --color-neutral-mark: #9aa1ab;
+  --color-gold: #a57c12;
+  --color-silver: #8a9199;
+  --color-bronze: #8e5427;
+  --color-highlight: #f2c14e;
+
+  /* feedback */
+  --color-success-bg: #e6f4ee;
+  --color-success-border: #9fd3bc;
+  --color-success-text: #0b5a3c;
+  --color-warning-bg: #fff6e5;
+  --color-warning-border: #f0d49a;
+  --color-warning-text: #5c4200;
+  --color-error: #b42318;
+
+  /* type */
+  --font: 'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --text-sm: 13px;
+  --text-md: 15px;
+  --text-lg: 18px;
+
+  /* spacing & shape */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 28px;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --target: 44px; /* minimum touch target */
+}

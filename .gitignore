@@ -1,0 +1,10 @@
+node_modules/
+dist/
+test-results/
+playwright-report/
+*.log
+
+# local backups / OS files
+_backup_before_trim_*.tgz
+*.tsbuildinfo
+.DS_Store
