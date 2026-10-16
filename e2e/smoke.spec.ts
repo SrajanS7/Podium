@@ -41,7 +41,7 @@ test('invalid input is blocked with a clear message', async ({ page }) => {
 test('switching a sport to per-athlete counting changes the totals', async ({ page }) => {
   await page.goto('/#/data');
   await page.getByRole('tab', { name: /Sports & counting rules/ }).click();
-  await page.getByRole('row', { name: /^Football/ }).getByRole('switch').click();
+  await page.getByRole('row', { name: /^Football/ }).getByRole('radio', { name: 'Per athlete' }).check();
   await nav(page, 'Overview');
   await expect(page.getByText(String(6854 - 24 + 407).replace(/\B(?=(\d{3})+(?!\d))/g, ','))).toBeVisible(); // 7,237
 });
@@ -49,21 +49,25 @@ test('switching a sport to per-athlete counting changes the totals', async ({ pa
 test('every screen loads without errors', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  for (const route of ['', 'countries', 'drivers', 'geography', 'regions', 'literacy-model', 'athletes', 'find-your-sport', 'data']) {
+  for (const route of ['', 'countries', 'drivers', 'geography', 'sport-strategy', 'literacy-model', 'athletes', 'data']) {
     await page.goto(`/#/${route}`);
     await expect(page.locator('h1')).toBeVisible();
   }
   expect(errors).toEqual([]);
 });
 
-test('geography myths and regions show the golden numbers', async ({ page }) => {
+test('geography myths and sport strategy show the golden numbers', async ({ page }) => {
   await page.goto('/#/geography');
   await expect(page.getByRole('heading', { name: 'Geography myths', level: 1 })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Hungary' })).toBeVisible();     // landlocked, 66 water medals
   await expect(page.getByRole('cell', { name: '69%' }).first()).toBeVisible();
-  await page.goto('/#/regions');
-  await expect(page.getByText('Western Europe won 32% of medals')).toBeVisible();
-  await expect(page.getByRole('cell', { name: '3.89×' })).toBeVisible();       // CIS vs expectation
+  await page.goto('/#/sport-strategy');
+  await expect(page.getByRole('heading', { name: 'Sport strategy', level: 1 })).toBeVisible();
+  await expect(page.getByText(/A swimming medallist wins 2\.08 medals on average, a football medallist 0\.07/)).toBeVisible();
+  await page.getByRole('button', { name: 'Show as table' }).first().click();
+  await expect(page.getByRole('cell', { name: 'Nordic Combined' })).toBeVisible();
+  await page.getByRole('button', { name: /^All 49 sports$/ }).click();          // chart shows every sport
+  await expect(page.getByRole('button', { name: /^All 49 sports$/ })).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('the Games dropdown opens below the button and filters the data', async ({ page }) => {
@@ -108,31 +112,17 @@ test('importing a bad file is refused with a clear message, and nothing changes'
   await expect(page.getByText('6,854')).toBeVisible();
 });
 
-test('navigation: data manager comes before additional insights and play', async ({ page }) => {
+test('navigation: data manager comes before additional insights', async ({ page }) => {
   await page.goto('/#/');
   await expect(page.locator('h1')).toBeVisible();
   const labels = await page.getByRole('navigation', { name: 'Main' }).locator('.nav-label').allTextContents();
-  expect(labels).toEqual(['Insights', 'Manage', 'Additional insights', 'Play']);
-});
-
-test('find your sport: Germany at 25, then 8 years of training and Kenya by typing', async ({ page }) => {
-  await page.goto('/#/find-your-sport');
-  await expect(page.getByText('prime window of 37 of 44 sports')).toBeVisible();
-  await expect(page.getByText('Best bets for Germany: canoeing, rowing, biathlon')).toBeVisible();
-  await page.getByLabel('Years of training first').fill('8');
-  await expect(page.getByText("you'd be 33")).toBeVisible();
-  await page.getByRole('button', { name: /Your country/ }).click();
-  await page.keyboard.type('ken');
-  await page.keyboard.press('Enter');
-  await expect(page.getByRole('heading', { name: 'Kenya at the Games' })).toBeVisible();
-  await page.getByLabel('Your age').fill('5');
-  await expect(page.getByRole('alert')).toContainText('between 10 and 80');
+  expect(labels).toEqual(['Insights', 'Manage', 'Additional insights']);
 });
 
 test('changing several counting rules lists all of them, and they can be restored', async ({ page }) => {
   await page.goto('/#/data');
   await page.getByRole('tab', { name: /Sports & counting rules/ }).click();
-  for (const sport of ['Swimming', 'Athletics', 'Rowing']) await page.getByRole('row', { name: new RegExp(`^${sport}`) }).getByRole('switch').click();
+  for (const sport of ['Swimming', 'Athletics', 'Rowing']) await page.getByRole('row', { name: new RegExp(`^${sport}`) }).getByRole('radio', { name: 'Once per team' }).check();
   const status = page.getByRole('status').filter({ hasText: 'Counting rules changed' });
   await expect(status).toContainText('Athletics, Rowing and Swimming are counted once per team');
   await expect(status).toContainText('3 edits');

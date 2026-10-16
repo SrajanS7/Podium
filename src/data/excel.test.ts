@@ -64,6 +64,40 @@ describe('Excel import checks', () => {
     expect(d.records).toHaveLength(9108);
   });
 
+  it('rejects a workbook whose sheets have headers but no data rows (it would wipe the data)', () => {
+    const wb = original();
+    for (const name of wb.SheetNames) wb.Sheets[name]['!ref'] = wb.Sheets[name]['!ref']!.replace(/\d+$/, '1');
+    expect(problemsOf(wb)).toEqual(['These sheets have no data rows (only a header): Medal Victories, Country Data, Olympic Events, Sport Types']);
+  });
+
+  it('rejects a workbook with no medal rows', () => {
+    const wb = original();
+    wb.Sheets['Medal Victories']['!ref'] = 'A1:H1';
+    expect(problemsOf(wb)).toEqual(['These sheets have no data rows (only a header): Medal Victories']);
+  });
+
+  it('rejects text in GDP, Literacy, Area, Year of birth and the Games year (would show as NaN)', () => {
+    const wb = original();
+    setCell(wb, 'Country Data', 'I3', 'n/a');            // GDP, Albania
+    setCell(wb, 'Country Data', 'J3', 'high');           // Literacy
+    setCell(wb, 'Country Data', 'E4', 'big');            // Area, Algeria
+    setCell(wb, 'Athletes', 'E3', 'unknown');            // Year of birth
+    setCell(wb, 'Olympic Events', 'B3', 'two thousand'); // Year
+    const p = problemsOf(wb);
+    expect(p).toContain('Country Data row 3 (Albania): GDP is not a number (leave the cell empty if unknown)');
+    expect(p).toContain('Country Data row 3 (Albania): Literacy is not a number (leave the cell empty if unknown)');
+    expect(p.some((x) => /Country Data row 4 \(.+\): Area is missing or not a positive number/.test(x))).toBe(true);
+    expect(p.some((x) => /Athletes row 3 \(.+\): Year of birth is missing or not a year/.test(x))).toBe(true);
+    expect(p).toContain('Olympic Events row 3: Year is missing or not a year');
+  });
+
+  it('still accepts empty optional cells (unknown GDP or literacy)', () => {
+    const wb = original();
+    delete wb.Sheets['Country Data']['I3'];
+    delete wb.Sheets['Country Data']['J3'];
+    expect(problemsOf(wb)).toEqual([]);
+  });
+
   it('rejects a medal for an athlete who is not on the Athletes sheet', () => {
     const wb = original();
     XLSX.utils.sheet_add_aoa(wb.Sheets['Medal Victories'], [[9108, 7051, 95, 7, 12, 1, 24, 1]], { origin: -1 });

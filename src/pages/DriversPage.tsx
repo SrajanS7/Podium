@@ -56,7 +56,7 @@ export default function DriversPage() {
         <ChartFrame
           style={{ flex: '3 1 560px' }}
           title="Which national factors move with medals?"
-          summary={`Rank correlation (Spearman) between every pair, across all nations with data. Green = rise together, red = one rises as the other falls, pale = no link. Strongest link with total medals: ${strongest.label.toLowerCase()} (${signed(strongest.rho)}); weakest: ${weakest.label.toLowerCase()} (${signed(weakest.rho)}). Correlation shows that two things move together, not that one causes the other.`}
+          summary={`Rank correlation (Spearman) between every pair, across all nations with data (In simple words - "do the nations that rank high on economy size also rank high on medals?"). Green = rise together, red = one rises as the other falls, pale = no link. Strongest link with total medals: ${strongest.label.toLowerCase()} (${signed(strongest.rho)}); weakest: ${weakest.label.toLowerCase()} (${signed(weakest.rho)}). Correlation shows that two things move together, not that one causes the other.`}
           table={{ headers: ['', ...matrix.labels], rows: matrix.labels.map((label, i) => [label, ...matrix.rho[i].map((r) => (r === null ? '–' : r.toFixed(2)))]) }}
         >
           <CorrelationMatrixChart matrix={matrix} />

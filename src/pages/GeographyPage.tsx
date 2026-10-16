@@ -51,7 +51,7 @@ export default function GeographyPage() {
         <FilterBar />
       </PageHeader>
 
-      <InsightBanner linkTo="/regions" linkText="Compare regions">
+      <InsightBanner linkTo="/drivers" linkText="See what drives success">
         Coastline, crowding and migration add little once population and wealth are known.
       </InsightBanner>
 

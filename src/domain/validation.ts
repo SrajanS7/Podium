@@ -69,6 +69,11 @@ const RECORD_COLUMN: Record<string, string> = {
  */
 export function validateImport(d: Dataset): string[] {
   const problems: string[] = [];
+  // An import replaces everything, so a sheet with headers but no rows would wipe the data and break every chart
+  const empty = ([['Medal Victories', d.records], ['Country Data', d.countries], ['Olympic Events', d.games], ['Sport Types', d.sports]] as const)
+    .filter(([, rows]) => rows.length === 0).map(([sheet]) => sheet);
+  if (empty.length) return [`These sheets have no data rows (only a header): ${empty.join(', ')}`];
+
   const duplicates = (sheet: string, ids: number[]) => {
     const seen = new Set<number>();
     ids.forEach((id, i) => {
@@ -86,8 +91,18 @@ export function validateImport(d: Dataset): string[] {
   d.countries.forEach((c, i) => {
     if (!c.name) problems.push(`Country Data row ${i + 2}: Country is empty`);
     if (!(c.population > 0)) problems.push(`Country Data row ${i + 2} (${c.name || 'no name'}): Population is missing or not a positive number`);
+    if (!(c.areaKm2 > 0)) problems.push(`Country Data row ${i + 2} (${c.name || 'no name'}): Area is missing or not a positive number`);
+    // Optional columns: an empty cell is fine (null), text is not (it would show as "NaN" in the charts)
+    const optional: [string, number | null][] = [['GDP', c.gdpPerCapita], ['Literacy', c.literacy], ['Birthrate', c.birthrate],
+      ['Coastline', c.coastlineKm], ['Net migration', c.netMigration]];
+    for (const [column, value] of optional)
+      if (value !== null && !Number.isFinite(value)) problems.push(`Country Data row ${i + 2} (${c.name || 'no name'}): ${column} is not a number (leave the cell empty if unknown)`);
+  });
+  d.athletes.forEach((a, i) => {
+    if (!Number.isInteger(a.birthYear) || a.birthYear < 1900) problems.push(`Athletes row ${i + 2} (${a.name || 'no name'}): Year of birth is missing or not a year`);
   });
   d.games.forEach((g, i) => {
+    if (!Number.isInteger(g.year) || g.year < 1896) problems.push(`Olympic Events row ${i + 2}: Year is missing or not a year`);
     if (g.season !== 'Summer' && g.season !== 'Winter') problems.push(`Olympic Events row ${i + 2}: Type of Games must be Summer or Winter`);
   });
 

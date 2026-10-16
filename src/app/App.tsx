@@ -7,9 +7,8 @@ import CountriesPage from '../pages/CountriesPage';
 import DriversPage from '../pages/DriversPage';
 import AthletesPage from '../pages/AthletesPage';
 import GeographyPage from '../pages/GeographyPage';
-import RegionsPage from '../pages/RegionsPage';
+import SportStrategyPage from '../pages/SportStrategyPage';
 import LiteracyModelPage from '../pages/LiteracyModelPage';
-import FindSportPage from '../pages/FindSportPage';
 // Data manager pulls in the Excel library: load it only when the screen is opened
 const DataManagerPage = lazy(() => import('../pages/DataManagerPage'));
 
@@ -29,10 +28,10 @@ export default function App() {
           <Route path="countries" element={<CountriesPage />} />
           <Route path="drivers" element={<DriversPage />} />
           <Route path="geography" element={<GeographyPage />} />
-          <Route path="regions" element={<RegionsPage />} />
+          <Route path="sport-strategy" element={<SportStrategyPage />} />
+          <Route path="regions" element={<Navigate to="/sport-strategy" replace />} />
           <Route path="literacy-model" element={<LiteracyModelPage />} />
           <Route path="athletes" element={<AthletesPage />} />
-          <Route path="find-your-sport" element={<FindSportPage />} />
           <Route path="data" element={<Suspense fallback={<p role="status">Loading the data manager…</p>}><DataManagerPage /></Suspense>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

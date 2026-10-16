@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { IconBook, IconDatabase, IconGlobe, IconMap, IconMedal, IconOverview, IconTarget, IconTrend, IconUser, IconWave } from '../components/ui/Icons';
+import { IconBook, IconDatabase, IconGlobe, IconMedal, IconTarget, IconOverview, IconTrend, IconUser, IconWave } from '../components/ui/Icons';
 import { useDataStore } from '../store/useDataStore';
 
 const navClass = ({ isActive }: { isActive: boolean }) => `nav-link${isActive ? ' active' : ''}`;
@@ -21,10 +21,8 @@ export default function Layout() {
         <NavLink to="/data" className={navClass}><IconDatabase />Data manager</NavLink>
         <div className="nav-label">Additional insights</div>
         <NavLink to="/geography" className={navClass}><IconWave />Geography myths</NavLink>
-        <NavLink to="/regions" className={navClass}><IconMap />Regions</NavLink>
+        <NavLink to="/sport-strategy" className={navClass}><IconTarget />Sport strategy</NavLink>
         <NavLink to="/literacy-model" className={navClass}><IconBook />Literacy model</NavLink>
-        <div className="nav-label">Play</div>
-        <NavLink to="/find-your-sport" className={navClass}><IconTarget />Find your sport</NavLink>
         <p className="sidebar-note">
           Olympic Games 2000–2012{changeCount > 0 ? ` · ${changeCount} edit${changeCount > 1 ? 's' : ''} this session` : ''}
         </p>

@@ -22,9 +22,10 @@ export function SportsTab() {
       <h2 id="rules" className="card-title">How medals are counted</h2>
       <p className="muted" style={{ maxWidth: 860 }}>
         The data lists one row per athlete, so in team sports every player has a row: one football gold appears about 18 times.
-        Switch a sport to <strong>Team event</strong> to count one medal per team. Every screen except Athletes uses these rules.
+        For each sport, choose how its medals count: <strong>Once per team</strong> (the whole squad shares one medal) or{' '}
+        <strong>Per athlete</strong> (every athlete's medal counts). The highlighted option is the rule in use. Every screen except Athletes uses these rules.
       </p>
-      <p id="rules-hint" className="muted small">Sports you change are marked “Changed”; all your changes stay in effect until you switch them back or restore the defaults.</p>
+      <p id="rules-hint" className="muted small">Sports you change are marked “Changed”; all your changes stay in effect until you change them back or restore the defaults.</p>
       {nChanged > 0 && (
         <div className="warning-box" style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
           <span>
@@ -37,7 +38,7 @@ export function SportsTab() {
       )}
       <div className="table-wrap">
         <table aria-describedby="rules-hint">
-          <thead><tr><th scope="col">Sport</th><th scope="col">Season</th><th scope="col">Team event (count once per team)</th><th scope="col" className="num">Athlete medals</th><th scope="col" className="num">Medals counted</th></tr></thead>
+          <thead><tr><th scope="col">Sport</th><th scope="col">Season</th><th scope="col">Count medals</th><th scope="col" className="num">Athlete medals</th><th scope="col" className="num">Medals counted</th></tr></thead>
           <tbody>
             {stats.map(({ sport, rows, counted }) => (
               <tr key={sport.id}>
@@ -47,11 +48,16 @@ export function SportsTab() {
                 </td>
                 <td>{sport.season}</td>
                 <td>
-                  <label className="switch">
-                    <input type="checkbox" role="switch" checked={sport.countingRule === 'team'}
-                      onChange={(e) => updateSport({ ...sport, countingRule: e.target.checked ? 'team' : 'individual' })} />
-                    {sport.countingRule === 'team' ? 'Team event' : 'Per athlete'}
-                  </label>
+                  {/* Two named options instead of one checkbox: the selected one always says what is in effect */}
+                  <div className="rule-choice" role="radiogroup" aria-label={`How to count ${sport.name} medals`}>
+                    {([['team', 'Once per team'], ['individual', 'Per athlete']] as const).map(([rule, label]) => (
+                      <label key={rule}>
+                        <input type="radio" name={`rule-${sport.id}`} value={rule} checked={sport.countingRule === rule}
+                          onChange={() => updateSport({ ...sport, countingRule: rule })} />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
                 </td>
                 <td className="num">{fmt(rows)}</td>
                 <td className="num" style={{ fontWeight: 700 }}>{fmt(counted)}</td>

@@ -374,10 +374,6 @@ export function geographyInsights(d: Dataset, f: Filters) {
   return { coast, density, migration, points, landlockedWater };
 }
 
-export function regionStats(d: Dataset, f: Filters): GroupStats[] {
-  const labels = [...new Set(d.countries.map((c) => regionLabel(c.region)))];
-  return groupStats(d, f, (c) => regionLabel(c.region), labels).sort((a, b) => b.perTenMillion - a.perTenMillion);
-}
 
 /**
  * Literacy beyond wealth: among poorer nations (GDP per person under $6,000, 1M+ people),
@@ -392,71 +388,6 @@ export function literacyContrast(d: Dataset, f: Filters, gdpBelow = 6000, litera
     examples: [...cs].sort((a, b) => (totals.get(b.id) ?? 0) - (totals.get(a.id) ?? 0)).slice(0, 4).map((c) => c.name),
   });
   return { gdpBelow, literacyFrom, literate: side(poor.filter((c) => c.literacy! >= literacyFrom)), rest: side(poor.filter((c) => c.literacy! < literacyFrom)) };
-}
-
-// ------------------------------------------------------------------ find your sport (fun page)
-export type AgeFitStatus = 'prime' | 'reach' | 'longshot' | 'out';
-
-export interface SportAgeFit {
-  sport: string; season: Season; n: number;
-  min: number; p10: number; q1: number; median: number; q3: number; p90: number; max: number;
-  /** prime = inside the middle 50% of medallist ages; reach = middle 80%; longshot = someone that age has medalled; out = nobody has */
-  status: AgeFitStatus;
-  /** share of the sport's medallists within one year of the given age */
-  shareNearAge: number;
-}
-
-const STATUS_ORDER: Record<AgeFitStatus, number> = { prime: 0, reach: 1, longshot: 2, out: 3 };
-
-/**
- * How a given age fits each sport's medallists (athlete level, every medal record with an age).
- * Describes who actually won; it is not a probability of winning. Sports with fewer than
- * `minMedallists` ages are left out so tiny samples don't produce odd windows.
- */
-export function sportAgeFit(d: Dataset, age: number, minMedallists = 40): SportAgeFit[] {
-  const sportById = new Map(d.sports.map((s) => [s.id, s]));
-  const ages = new Map<number, number[]>();
-  for (const r of d.records) if (r.age !== null) {
-    if (!ages.has(r.sportId)) ages.set(r.sportId, []);
-    ages.get(r.sportId)!.push(r.age);
-  }
-  const out: SportAgeFit[] = [];
-  for (const [sportId, a] of ages) {
-    if (a.length < minMedallists) continue;
-    const s = sportById.get(sportId);
-    if (!s) continue;
-    const q = (p: number) => quantile(a, p);
-    const [min, p10, q1, median, q3, p90, max] = [Math.min(...a), q(0.1), q(0.25), q(0.5), q(0.75), q(0.9), Math.max(...a)];
-    const status: AgeFitStatus = age >= q1 && age <= q3 ? 'prime' : age >= p10 && age <= p90 ? 'reach' : age >= min && age <= max ? 'longshot' : 'out';
-    out.push({ sport: s.name, season: s.season, n: a.length, min, p10, q1, median, q3, p90, max, status,
-      shareNearAge: a.filter((x) => Math.abs(x - age) <= 1).length / a.length });
-  }
-  // best fit first: by status, then by how many medallists were about that age
-  return out.sort((x, y) => STATUS_ORDER[x.status] - STATUS_ORDER[y.status] || y.shareNearAge - x.shareNearAge || x.sport.localeCompare(y.sport));
-}
-
-export interface SportMedals { sport: string; season: Season; medals: number }
-
-/** Event-level medals by sport (all Games) for one nation, or for every nation of a region when `region` is given. */
-export function sportMedalsFor(d: Dataset, who: { countryId: number } | { region: string }): SportMedals[] {
-  const ids = 'countryId' in who ? new Set([who.countryId]) : new Set(d.countries.filter((c) => regionLabel(c.region) === regionLabel(who.region)).map((c) => c.id));
-  const bySport = tallyBy(eventMedals(d.records.filter((r) => ids.has(r.countryId)), d.sports), (m) => m.sportId);
-  return [...bySport.entries()].map(([sportId, t]) => {
-    const s = d.sports.find((x) => x.id === sportId)!;
-    return { sport: s.name, season: s.season, medals: t.total };
-  }).sort((a, b) => b.medals - a.medals || a.sport.localeCompare(b.sport));
-}
-
-/**
- * Best bets: sports where the age is at least within reach (middle 80% of medallists) AND the nation
- * (or, if it never medalled, its region) has won medals. Sorted by the nation's medals in the sport.
- */
-export function bestBets(fit: SportAgeFit[], medals: SportMedals[], limit = 6) {
-  const bySport = new Map(medals.map((m) => [m.sport, m.medals]));
-  return fit.filter((f) => (f.status === 'prime' || f.status === 'reach') && (bySport.get(f.sport) ?? 0) > 0)
-    .map((f) => ({ ...f, medals: bySport.get(f.sport)! }))
-    .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || b.medals - a.medals)
-    .slice(0, limit);
 }
 
 // ------------------------------------------------------------------ athletes (athlete level)
@@ -499,6 +430,51 @@ export function athleteStats(d: Dataset, sport: string | 'all' = 'all') {
     athletes, medallists: athletes.length, multiMedallists: athletes.filter((a) => a.total > 1).length,
     medianAge: median(ages), minAge: Math.min(...ages), maxAge: Math.max(...ages), histogram, ageBySport,
   };
+}
+
+// ------------------------------------------------------------------ sport strategy
+export interface SportReturn {
+  sport: string;
+  season: Season;
+  isTeam: boolean;
+  /** medals as awarded to nations (team sports once per team), all Games */
+  medals: number;
+  /** distinct athletes who won a medal in the sport */
+  medallists: number;
+  /** medals ÷ medallists: the return per funded athlete */
+  perMedallist: number;
+  /** share of medallists who won more than one medal in the sport */
+  multiShare: number;
+  /** nations that won at least one medal in the sport */
+  nations: number;
+}
+
+/**
+ * Return per athlete, per sport (same as the notebook's sport_profile): team-adjusted medals ÷ distinct medallists.
+ * In swimming one medallist wins about 2 medals; in football a squad of ~18 shares one (0.07 per athlete).
+ */
+export function sportReturns(d: Dataset): SportReturn[] {
+  const medals = new Map<number, number>();
+  for (const m of eventMedals(d.records, d.sports)) medals.set(m.sportId, (medals.get(m.sportId) ?? 0) + m.count);
+  const perAthlete = new Map<number, Map<number, number>>();   // sport -> athlete -> medals
+  const nations = new Map<number, Set<number>>();
+  for (const r of d.records) {
+    if (!nations.has(r.sportId)) nations.set(r.sportId, new Set());
+    nations.get(r.sportId)!.add(r.countryId);
+    if (r.athleteId === null) continue;
+    if (!perAthlete.has(r.sportId)) perAthlete.set(r.sportId, new Map());
+    const a = perAthlete.get(r.sportId)!;
+    a.set(r.athleteId, (a.get(r.athleteId) ?? 0) + r.medalCount);
+  }
+  return d.sports.filter((s) => (perAthlete.get(s.id)?.size ?? 0) > 0).map((s) => {
+    const athletes = [...perAthlete.get(s.id)!.values()];
+    const total = medals.get(s.id) ?? 0;
+    return {
+      sport: s.name, season: s.season, isTeam: s.countingRule === 'team', medals: total, medallists: athletes.length,
+      perMedallist: total / athletes.length, multiShare: athletes.filter((n) => n > 1).length / athletes.length,
+      nations: nations.get(s.id)?.size ?? 0,
+    };
+  }).sort((a, b) => b.perMedallist - a.perMedallist);
 }
 
 // ------------------------------------------------------------------ data quality

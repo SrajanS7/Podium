@@ -61,7 +61,7 @@ function CountryEditor({ country, onClose, onSave }: { country: Country; onClose
   return (
     <aside className="card editor" aria-labelledby="country-editor">
       <h2 id="country-editor" className="card-title">Edit {country.name}</h2>
-      <p className="muted small">Population and GDP per person drive the expected-medals model on Drivers of success. Coastline and net migration feed Geography myths and Regions.</p>
+      <p className="muted small">Population and GDP per person drive the expected-medals model on Drivers of success. Coastline and net migration feed Geography myths.</p>
       <label className="field">Region
         <input type="text" value={draft.region} onChange={(e) => setDraft({ ...draft, region: e.target.value })} aria-invalid={!!errors.region} />
         {errors.region && <span className="field-error">{errors.region}</span>}

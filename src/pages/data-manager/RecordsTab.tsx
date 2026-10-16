@@ -96,7 +96,7 @@ export function RecordsTab({ review, setReview, addSignal, goToSports }: {
               </select>
             </label>
             <label className="field" style={{ flex: '1 1 120px' }}>Medal
-              <select value={medal} onChange={(e) => { setMedal(e.target.value as MedalType | 'all'); resetPage(); }}>
+              <select value={medal} style={medal === 'silver' ? { background: '#d9dde3', borderColor: 'var(--color-silver)' } : undefined} onChange={(e) => { setMedal(e.target.value as MedalType | 'all'); resetPage(); }}>
                 <option value="all">All medals</option><option value="gold">Gold</option><option value="silver">Silver</option><option value="bronze">Bronze</option>
               </select>
             </label>

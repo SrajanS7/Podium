@@ -36,9 +36,8 @@ The sidebar is ordered by what matters most for the brief: the core insights, th
 | Insights | Athletes | Who are the most decorated athletes, at what age do medallists peak? | Athlete level |
 | Manage | Data manager | Add / edit / delete records, edit nations, change counting rules, review data quality, import / export Excel | Both |
 | Additional insights | Geography myths | Does a long coastline mean more water-sport medals? Do crowded nations or nations losing people fall behind? | Team sports counted once |
-| Additional insights | Regions | Which world regions win most per person, and how far above or below expectation | Team sports counted once |
+| Additional insights | Sport strategy | Which sports give the most medals per funded athlete (swimming 2.08 per medallist vs football 0.07)? Same chart as the notebook; peak age by sport stays on Athletes | Team sports counted once ÷ distinct medallists |
 | Additional insights | Literacy model | What if the model also knew literacy? Population + wealth + literacy scatter, 77% → 85% explained, whose expected medals change most (India 158 → 6) | Team sports counted once |
-| Play | Find your sport | Enter an age, years of training and a country: which sports' medallists were that age? Describes who won, no probabilities | Ages: athlete level · country medals: team sports once |
 
 ## Key decisions
 
@@ -80,19 +79,17 @@ against golden values from an independent Python analysis. Pages only call them 
 never the only cue, every chart has a summary and a "Show as table" view. Automated axe
 scan of all screens in the e2e suite (WCAG 2.1 A/AA).
 
-**6. Geography and regions use every column of the Country Data sheet** (`groupStats` and friends in
+**6. Geography uses every column of the Country Data sheet** (`groupStats` and friends in
 `src/domain/metrics.ts`). The workbook's `Coastline` is coast length ÷ area × 100, not a length, so the import converts it
 to kilometres (`coastlineKm` = ratio × area ÷ 100; Albania 1.26 × 28,748 ÷ 100 = 362 km) and the export converts it back.
-Population density is derived from population ÷ area (people per km²), so it stays right after edits. Bands and regions
-are compared with **actual ÷ expected**: the group's medals divided by the sum of the model's expected medals for its
-nations, so 1.0× everywhere means the factor adds nothing beyond population and wealth. Regional averages are
-population-weighted. Working copies saved by the previous version are back-filled with the new fields on load.
+Population density is derived from population ÷ area (people per km²), so it stays right after edits. Bands are compared with **actual ÷ expected**: the group's medals divided by the sum of the model's expected medals for its
+nations, so 1.0× everywhere means the factor adds nothing beyond population and wealth. Working copies saved by the previous version are back-filled with the new fields on load.
 
 Findings (all Games): water-sport medals per 10M people are about level with or without a coast (Landlocked 3.2 ·
 under 1,000 km 3.0 · 1,000–5,000 km 3.0 · over 5,000 km 3.6), landlocked nations hold 9.1% of
 medals but only about 3% in sailing, swimming and rowing (and 1% in gymnastics), while winning 32% in canoeing, so they
 specialise rather than lack the sea; density shows no steady pattern (1.46× · 0.86× · 1.19× · 0.52×); nations gaining people win
-7× more per person but only 1.23× vs 0.93× after wealth; the CIS wins 3.89× its expected medals, the Near East 0.17×.
+7× more per person but only 1.23× vs 0.93× after wealth.
 All are golden-value tests in `metrics.test.ts`.
 
 ## Project structure
@@ -115,3 +112,12 @@ e2e/                          Playwright smoke + accessibility tests
 
 React 19 · TypeScript (strict) · Vite · React Router (hash routing) · Zustand · Recharts ·
 Zod · SheetJS (xlsx) · idb-keyval · Vitest · Playwright · axe-core.
+
+**7. Sport strategy mirrors the notebook** (`sportReturns` in `src/domain/metrics.ts`). Return per athlete =
+medals (team sports once per team) ÷ distinct medallists in the sport, all Games. Golden values from the notebook are
+tested (swimming 2.08, ice hockey 0.04, football 24 medals for 352 medallists). The old Regions screen was removed;
+`#/regions` now redirects here.
+
+**8. Counting rules are a two-option choice per sport** (Data manager › Sports & counting rules): *Once per team* or
+*Per athlete*, as a radio group, so the highlighted option always names the rule in use (a single checkbox labelled
+with the current state read as the opposite action).

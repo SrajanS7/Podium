@@ -6,7 +6,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { eventMedals, tally } from './counting';
-import { athleteStats, bestBets, countryRows, sportAgeFit, sportMedalsFor, correlationMatrix, expectedMedalsModel, geographyInsights, literacyModelChanges, hostEffect, literacyContrast, overviewStats, qualityChecks, regionStats } from './metrics';
+import { athleteStats, countryRows, correlationMatrix, expectedMedalsModel, geographyInsights, literacyModelChanges, hostEffect, literacyContrast, overviewStats, qualityChecks, sportReturns } from './metrics';
 import { linearRegression, spearman } from './stats';
 import type { Dataset, Filters } from './types';
 import { validateMedalRecord } from './validation';
@@ -140,18 +140,24 @@ describe('geography myths (golden values from the Python analysis, team sports o
   });
 });
 
-describe('regions and literacy', () => {
-  const r = regionStats(data, ALL);
-  it('Oceania wins most per person (132.5 per 10M), Sub-Saharan Africa least (1.8)', () => {
-    expect(r[0].key).toBe('Oceania');
-    expect(Math.round(r[0].perTenMillion * 10) / 10).toBe(132.5);
-    expect(r[r.length - 1]).toMatchObject({ key: 'Sub-Saharan Africa' });
-    expect(Math.round(r[r.length - 1].perTenMillion * 10) / 10).toBe(1.8);
+describe('sport strategy (golden values from the notebook)', () => {
+  const r = sportReturns(data);
+  const get = (s: string) => r.find((x) => x.sport === s)!;
+  const r2 = (x: number) => Math.round(x * 100) / 100;
+  it('return per athlete: swimming 2.08, Nordic combined and biathlon 2.00, ice hockey 0.04', () => {
+    expect(r.length).toBe(49);
+    expect(r.slice(0, 3).map((x) => [x.sport, r2(x.perMedallist)])).toEqual([['Swimming', 2.08], ['Biathlon', 2], ['Nordic Combined', 2]]);
+    expect(r2(r[r.length - 1].perMedallist)).toBe(0.04);
+    expect(r[r.length - 1].sport).toBe('Ice Hockey');
   });
-  it('Western Europe: 32% of medals; CIS 3.89x what population and wealth predict', () => {
-    expect(Math.round(r.find((x) => x.key === 'Western Europe')!.shareOfMedals * 100)).toBe(32);
-    expect(Math.round(r.find((x) => x.key === 'CIS (former USSR)')!.actualVsExpected! * 100) / 100).toBe(3.89);
+  it('football: 24 medals shared by 352 medallists (0.07 each); 34 nations won a swimming medal', () => {
+    expect([get('Football').medals, get('Football').medallists, r2(get('Football').perMedallist)]).toEqual([24, 352, 0.07]);
+    expect(get('Swimming').nations).toBe(34);
+    expect(get('Short-Track Speed Skating').nations).toBe(7);
   });
+});
+
+describe('literacy beyond wealth', () => {
   it('poorer nations: 19 of 23 highly literate ones won a medal vs 18 of 63 others (866 vs 237 medals)', () => {
     const l = literacyContrast(data, ALL);
     expect([l.literate.winners, l.literate.nations, l.literate.medals]).toEqual([19, 23, 866]);
@@ -173,30 +179,5 @@ describe('literacy model (Additional insights)', () => {
   });
   it('the default model is unchanged: 226 nations, no literacy', () => {
     expect(expectedMedalsModel(data, ALL)).toMatchObject({ withLiteracy: false, n: 226, literacyMultiplier: null });
-  });
-});
-
-describe('find your sport (golden values from the Python analysis)', () => {
-  const count = (age: number) => sportAgeFit(data, age).reduce((m, f) => ({ ...m, [f.status]: (m[f.status] ?? 0) + 1 }), {} as Record<string, number>);
-  it('44 sports with 40+ medallist ages; at 25 most are in the prime window', () => {
-    expect(sportAgeFit(data, 25)).toHaveLength(44);
-    expect(count(25)).toEqual({ prime: 37, reach: 5, longshot: 2 });
-  });
-  it('windows by age: 18, 31 and 45', () => {
-    expect(count(18)).toEqual({ prime: 2, reach: 3, longshot: 25, out: 14 });
-    expect(count(31)).toEqual({ prime: 10, reach: 17, longshot: 16, out: 1 });
-    expect(count(45)).toEqual({ reach: 1, longshot: 5, out: 38 });
-  });
-  it('at 25: past the gymnastics window, prime for shooting; equestrian median 39, oldest medallist 61', () => {
-    const f = new Map(sportAgeFit(data, 25).map((x) => [x.sport, x]));
-    expect(f.get('Gymnastics')!.status).toBe('reach');
-    expect(f.get('Rhythmic Gymnastics')!.status).toBe('longshot');
-    expect(f.get('Shooting')!.status).toBe('prime');
-    expect(f.get('Equestrian')).toMatchObject({ median: 39, max: 61 });
-  });
-  it('Germany at 25: best bets canoeing (68), rowing (46), biathlon (40)', () => {
-    const germany = data.countries.find((c) => c.name === 'Germany')!;
-    const bets = bestBets(sportAgeFit(data, 25), sportMedalsFor(data, { countryId: germany.id }));
-    expect(bets.slice(0, 3).map((b) => [b.sport, b.medals])).toEqual([['Canoeing', 68], ['Rowing', 46], ['Biathlon', 40]]);
   });
 });
